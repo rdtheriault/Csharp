@@ -1,0 +1,247 @@
+/*
+Photo upload on webpage to database back to being displayed on webpage
+
+NOTES
+Process uses function to convert image to byte[] which is needed to put in database
+Conversion is format sensitive so type is needed to be stored in database as well in order to convert back to correct type. Unless you only accept one type.
+This code accepts gif, jpeg, bmp, and tiff.
+A web handler is needed to take the image to the webpage to be displayed (included)
+SQL code is included, you will see everything tied to an employee number, which was hard coded for testing
+*/
+
+////btnLoadPic – Takes photo from upload converts to byte[] (using another function) and stores byte[] in database////
+protected void btnPhotoPreview_Click(object sender, EventArgs e)
+    {
+
+        Image converter = null;
+
+        if (PhotoUpload.HasFile)
+        {
+  	//Get picture from file upload
+            converter = Image.FromStream(PhotoUpload.PostedFile.InputStream);
+
+            byte[] photo = null;
+            string type = "";
+
+
+		//Test format and does correct formatting, also sets type
+            if (ImageFormat.Gif.Equals(converter.RawFormat))
+            {
+                photo = ConvertImageToByteArray(converter, ImageFormat.Gif);
+                type = "Gif";
+            }
+            else if (ImageFormat.Jpeg.Equals(converter.RawFormat))
+            {
+                photo = ConvertImageToByteArray(converter, ImageFormat.Jpeg);
+                type = "Jpeg";
+            }
+            else if (ImageFormat.Bmp.Equals(converter.RawFormat))//(converter.Equals(ImageFormat.Bmp))
+            {
+                photo = ConvertImageToByteArray(converter, ImageFormat.Bmp);
+                type = "Bmp";
+            }
+            else if (ImageFormat.Tiff.Equals(converter.RawFormat))
+            {
+                photo = ConvertImageToByteArray(converter, ImageFormat.Tiff);
+                type = "Tiff";
+            }
+            //else lblPicError = "Not valid picture format";
+
+            if (type != "")
+            {
+                if (clsDataLayer.SetPic(photo, "44931", type))//clsDataLayer is another class
+                {
+                    Image1.ImageUrl = "~/Handler.ashx";//displays picture to ensure it worked
+                    //ImagePreview.ImageUrl = "~/ImageHandler.ashx"; (used in testing)
+                }
+                else
+                {
+                    lblPicError.Text = "The pic did not save";
+                }
+            }
+
+        }
+
+        else
+        {
+            lblPicError.Text = "You need to enter a picture or correct format";
+        }
+
+ 
+    }
+
+
+////Function to convert images to byte[]////
+
+    private byte[] ConvertImageToByteArray(Image imageToConvert, ImageFormat formatOfImage)
+    {
+        byte[] Ret;
+        try
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                imageToConvert.Save(ms, formatOfImage);
+                Ret = ms.ToArray();
+            }
+        }
+        catch (Exception) { throw; }
+        return Ret;
+    }
+
+////Hanlder.ashx – This is used to get the picture from the database to the image control on the webpage. Link the image to this file instead of an image as shown in the btnLoadPic and page load.////
+<%@ WebHandler Language="C#" Class="Handler" %>
+
+using System;
+using System.Web;
+using System.IO;
+using System.Drawing;
+
+public class Handler : IHttpHandler {
+    
+    public void ProcessRequest (HttpContext context) {
+
+
+        byte[] bytePhoto = clsDataLayer.GetPic("4931");
+        string type = clsDataLayer.GetType("44931");
+
+
+        if (type == "Gif") context.Response.ContentType = "image/gif";
+        else if (type == "Jpeg") context.Response.ContentType = "image/jpeg";
+        else if (type == "Bmp") context.Response.ContentType = "image/bmp";
+        else if (type == "Tiff") context.Response.ContentType = "image/tiff";
+
+        
+        context.Response.BinaryWrite(bytePhoto);
+    }
+ 
+    public bool IsReusable {
+        get {
+            return false;
+        }
+    }
+
+}
+
+////extra info (Used for testing) , upload a pic and put it into the database (used without file upload feature) – note – does not use convert to byte function////
+
+        bool picWorked = false; //initialize variable
+        FileStream fs = new FileStream("C:/Users/theriault robert/Pictures/c3.gif", FileMode.Open, FileAccess.Read); //grab predefined pic to be read into byte[]
+        BinaryReader br = new BinaryReader(fs);
+        byte[] photo = br.ReadBytes((int)fs.Length);
+
+        picWorked = clsDataLayer.SetPic(photo, "4931", "Gif");
+
+
+////Page Load////
+
+        Image1.ImageUrl = "~/Handler.ashx";
+
+/////////////////SQL Connections/////////////////////////
+
+
+    public static bool SetPic(byte[] image, string empID, string type)
+    {
+
+        bool saved = false;
+
+        try
+        {
+        SqlConnection myConnection = new SqlConnection(@"Server=.\SQLEXPRESS; Database=sappDB; User ID=####; Password=&&&&; Trusted_Connection=False;");
+
+        SqlCommand addpic = new SqlCommand("UPDATE tblEmp SET Pic = @img, Extra1 ='" + type + "' WHERE EMPID = " + empID, myConnection);
+
+        addpic.Parameters.Add("@img", SqlDbType.Image, image.Length).Value = image;
+
+        myConnection.Open();
+
+        addpic.ExecuteNonQuery();
+        myConnection.Close();
+
+            saved = true;
+        }
+        catch
+        {
+            saved = false;
+        }
+
+        return saved;
+
+    }
+
+        public static byte[] GetPic(string empID)
+    {
+        SqlDataReader rdr = null;
+
+        byte[] photo = null;
+        
+        SqlCommand myCommand;
+
+        SqlConnection myConnection = new SqlConnection(@"Server=.\SQLEXPRESS; Database=sappDB; User ID=####; Password=&&&&; Trusted_Connection=False;"); 
+
+            myCommand = new SqlCommand("SELECT Pic FROM tblEmp WHERE EMPID = " + empID, myConnection);
+            myConnection.Open();
+            rdr = myCommand.ExecuteReader();
+
+            //check to see if ExecuteReader is null if not convert to string else send null back
+            if (rdr.Read())
+            {
+               photo = (byte[])rdr["Pic"];
+            }
+            else
+            {
+                //holder = null;
+            }
+            myConnection.Close();
+
+
+
+        return photo;
+    }
+
+        public static string GetType(string empID)
+        {
+            SqlDataReader rdr = null;
+
+            string type = "";
+
+            SqlCommand myCommand;
+
+            SqlConnection myConnection = new SqlConnection(@"Server=.\SQLEXPRESS; Database=sappDB; User ID=sa; Password=robert; Trusted_Connection=False;");
+
+            myCommand = new SqlCommand("SELECT Extra1 FROM tblEmp WHERE EMPID = " + empID, myConnection);
+            myConnection.Open();
+            rdr = myCommand.ExecuteReader();
+
+            //check to see if ExecuteScalar is null if not convert to string else send null back
+            if (rdr.Read())
+            {
+                type = (string)rdr["Extra1"];
+            }
+            else
+            {
+                //holder = null;
+            }
+            myConnection.Close();
+
+
+
+            return type;
+        }
+
+
+//// HTML items used - Page ASPX – botton, upload, imagecontrol////
+<tr>
+        <td class="style3">
+            <asp:Label ID="Label2" runat="server" Text="Photo upload" />
+        </td>
+        <td class="style4">
+            <asp:FileUpload runat="server" ID="PhotoUpload" />
+        </td>
+        <td class="style4">
+            <asp:Button runat="server" ID="btnPhotoPreview" Text="Preview" OnClick="btnPhotoPreview_Click" />
+        </td>
+        <td class="style1">
+            <asp:Image runat="server" ID="ImagePreview" Height="164px" Width="125px" />
+        </td>
+</tr>
+
