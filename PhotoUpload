@@ -45,7 +45,10 @@ protected void btnPhotoPreview_Click(object sender, EventArgs e)
                 photo = ConvertImageToByteArray(converter, ImageFormat.Tiff);
                 type = "Tiff";
             }
-            //else lblPicError = "Not valid picture format";
+            else 
+	    {
+		lblPicError.Text = "Not a valid picture format";
+	    }
 
             if (type != "")
             {
@@ -64,7 +67,7 @@ protected void btnPhotoPreview_Click(object sender, EventArgs e)
 
         else
         {
-            lblPicError.Text = "You need to enter a picture or correct format";
+            lblPicError.Text = "You need to enter a picture";
         }
 
  
