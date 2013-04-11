@@ -1,0 +1,31 @@
+
+  string userHolder = HttpContext.Current.User.Identity.Name; //get current user
+
+  string user = "";
+  int z = 0;
+
+  lblTest.Text = userHolder; //display initial username for testing
+
+  char delimiterChar = '\\';
+  string[] words = userHolder.Split(delimiterChar); // spilt to string array on \
+  System.Console.WriteLine("{0} words in userHolder:", words.Length); //lets you know array length
+
+  lblTest.Text = words[1];//display username after the \ for testing
+
+  userHolder = words[1]; // "044931" + userHolder;//add employee number to user for UMCDF AD do not need on SAPP website
+
+  char[] userChar = userHolder.ToCharArray(); 
+
+  while (userChar[z] == '0')//gets rid of zeros at beggining
+  {
+    z++;
+  }
+
+  for (int i = z; i < 6; i++)//starts after last zero and spits string back out from array
+  {
+    user = user + Convert.ToString(userChar[i]);
+  }
+
+  lblTest.Text = user; //displays final number for testing
+
+  Session["User"] = user; //make user session user for use with other pages
