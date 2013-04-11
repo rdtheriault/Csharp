@@ -1,0 +1,44 @@
+////HTML Code////   
+
+<asp:ImageMap ID="map" runat="server" ImageUrl="~/images/backgroundWithLogos2.gif" BorderStyle="None">
+            </asp:ImageMap>
+
+////Code Behind////
+
+ //create new hotspot set attributes as hotspot to map (picture)
+        RectangleHotSpot spot1 = new RectangleHotSpot();
+        spot1.HotSpotMode = HotSpotMode.Navigate;
+        spot1.NavigateUrl = "page1.aspx";
+        spot1.Left = 32;
+        spot1.Right = 158;
+        spot1.Top = 284;
+        spot1.Bottom = 84;
+        map.HotSpots.Add(spot1);
+
+
+        RectangleHotSpot spot2 = new RectangleHotSpot();
+        spot2.HotSpotMode = HotSpotMode.Navigate;
+        spot2.NavigateUrl = "page2.aspx";
+        spot2.Left = 181;
+        spot2.Right = 344;
+        spot2.Top = 254;
+        spot2.Bottom = 89;
+        map.HotSpots.Add(spot2);
+
+        RectangleHotSpot spot3 = new RectangleHotSpot();
+        spot3.HotSpotMode = HotSpotMode.Navigate;
+        spot3.NavigateUrl = "page3.aspx";
+        spot3.Left = 525;
+        spot3.Right = 681;
+        spot3.Top = 254;
+        spot3.Bottom = 89;
+        map.HotSpots.Add(spot3);
+
+        RectangleHotSpot spot4 = new RectangleHotSpot();
+        spot4.HotSpotMode = HotSpotMode.Navigate;
+        spot4.NavigateUrl = "page4.aspx";
+        spot4.Left = 368;
+        spot4.Right = 496;
+        spot4.Top = 250;
+        spot4.Bottom = 84;
+        map.HotSpots.Add(spot4);
