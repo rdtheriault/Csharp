@@ -1,0 +1,137 @@
+protected void btnSubmit_Click(object sender, EventArgs e)
+    {
+        //get current user name and seperate after domain\
+        string userHolder = HttpContext.Current.User.Identity.Name;
+        char delimiterChar = '\\';
+        string[] words = userHolder.Split(delimiterChar);
+
+        //take first word after domain\
+        string userOnly = words[1];
+        lblError.Text = userOnly;
+
+
+        int weekCount = 0;//represents Hours
+
+        string dateHolder = txtDate.Text;//get date from textbox
+
+        DateTime dateAsDate = Convert.ToDateTime(txtDate.Text);//take from Text Box and convert to date
+        DateTime datePlus7 = dateAsDate.AddDays(7);//DateTime for week of = lastDay + 7;
+
+
+        try
+        {
+            int weeks = Convert.ToInt32(txtWeeks.Text);
+            int ttlWeeks = weeks * 2;
+
+            //Create array with X rows and y columns
+            string[,] myArray = new string[36, ttlWeeks];//hard coded 36 in
+
+
+            for (int i = 1; i <= weeks; i++)
+            {
+
+
+                //use a datatable instead to get to Hours which is not a normal column
+                DataSet1.OTauthorizationDataTable DS = new DataSet1.OTauthorizationDataTable();
+                SqlConnection Conn = new SqlConnection("Data Source=SIGMA_2K3;Initial Catalog=OTauthorization;Persist Security Info=True;User ID=user;Password=password");
+                SqlCommand cmd = new SqlCommand();
+                SqlDataAdapter sqlDA;
+
+
+                //SQL statement uses new set of dates each loop
+                sqlDA = new SqlDataAdapter("select WorkForDept.workfordeptname, SUM(OTauthorization.otRequestedHRS) AS Hours " +
+                    "from OTauthorizationForm join WorkForDept on WorkForDept.workfordeptID = OTauthorizationForm.workfordeptid join OTauthorization on OTauthorizationForm.id = OTauthorization.form_id " +
+                    "where (OTauthorizationForm.request_we_date > Convert(datetime,'" + dateAsDate + "')) AND (OTauthorizationForm.request_we_date < Convert(datetime,'" + datePlus7 + "')) " + 
+                    "group by  WorkForDept.workfordeptname", Conn);
+
+                // populate dataset
+                sqlDA.Fill(DS);
+
+
+                //get count to loop through only the right amount of rows
+                int count = DS.Rows.Count;
+
+                //set date to first row
+                myArray[0, weekCount] = dateHolder;
+
+                //put department names in each of the rows for the date
+                for (int j = 1; j < count + 1; j++)
+                {
+                    myArray[j, weekCount] = DS.Rows[j - 1]["workfordeptname"].ToString();
+                }
+
+                weekCount++;//increment to next column
+
+                //set date to first row
+                myArray[0, weekCount] = dateHolder;
+
+                //puts total hours in next column
+                for (int j = 1; j < count + 1; j++)
+                {
+                    myArray[j, weekCount] = DS.Rows[j - 1]["Hours"].ToString();
+                }
+
+
+                //stuff to do before next week -- date, weekX, dateplus7
+                weekCount++;//increment to next column
+                dateAsDate = datePlus7;
+                datePlus7 = dateAsDate.AddDays(7);
+                dateHolder = dateAsDate.ToString("MM/dd/yyyy");
+
+            }
+
+
+                
+                //creates file in different places V
+
+                FileStream fs = new FileStream("//SERVER/Folder/data2.csv", FileMode.Create);
+
+                        
+                //resets week count to be used again
+                weekCount = 0;
+
+                //
+                StreamWriter sw = new StreamWriter(fs);
+
+                for (int i = 0; i < 36; i++)
+                {
+                    sw.Write(myArray[i, weekCount] + ",");
+                    for (int o = 1; o < ttlWeeks; o++)
+                    {
+                    sw.Write(myArray[i, o] + ",");
+                    }
+                    //Reset X so next Y starts at the beginning
+                    sw.Write(Environment.NewLine);
+
+                }
+
+                //Flush memory and close streams
+                sw.AutoFlush = true;
+                sw.Close();
+                fs.Close();
+
+                //prompt user to save csv
+                String FileName = "data2.csv";
+                String FilePath = "//SERVER/Folder/"; //Replace this
+                System.Web.HttpResponse response = System.Web.HttpContext.Current.Response;
+                response.ClearContent();
+                response.Clear();
+                response.ContentType = "text/csv";
+                response.AddHeader("Content-Disposition", "attachment; filename=" + FileName + ";");
+                response.TransmitFile(FilePath + FileName);
+                response.Flush();
+
+                // Deletes the file on server
+                File.Delete(FilePath + FileName);
+
+                response.End();
+
+
+        }
+
+        catch 
+        {
+            lblError.Text = "Did you enter a number into the Week Field?";
+        }
+
+    }
