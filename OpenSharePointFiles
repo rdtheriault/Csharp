@@ -1,0 +1,30 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.IO;
+
+namespace ConsoleApplication2
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+
+            string[] filePaths = Directory.GetFiles("\\\\share.website.com@SSL\\DavWWWRoot\\services\\shop\\ShopOrders1213"); //get full location path of files
+
+            int x = filePaths.Length; //count of files
+
+            for (int i = 0; i < x; i++)
+            {
+                Console.WriteLine(filePaths[i]);
+                //Process.Start(filePaths[i]);
+                string[] lines = File.ReadAllLines(filePaths[i]); //reads the files cause it to "open"
+            }
+            Console.ReadLine();
+
+
+        }
+    }
+}
