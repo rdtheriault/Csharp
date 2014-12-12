@@ -1,0 +1,78 @@
+private void btnSubmit_Click(object sender, EventArgs e)
+        {
+            string num = cbNum.Text;
+            string school = cbSchool.Text;
+            string room = tbRoom.Text;
+            string type = cbCompType.Text;
+            SecureString pw = new SecureString();
+            pw = Program.ToSecureString(tbPW.Text);//convert to secure string
+            string path = "\\\\Domain\\folder\\printers.csv";
+            string user = "domain" + @"\" + cbUser.Text;
+            List<string> list = new List<string>(System.IO.File.ReadAllLines(path));//fill list with computer names
+            string holder = "";
+
+            //cmd for powershell
+            string test = "cmd /c net stop spooler; cmd /c del %systemroot%\\system32\\spool\\printers\\*.shd; cmd /c del %systemroot%\\system32\\spool\\printers\\*.spl; cmd /c net start spooler; ";
+
+            //if no empty do search
+            if (type != "") { list = Program.Search(type+"-", list); }//helps get rid of other computer that just have d or l  in them
+            if (school != "") { list = Program.Search(school, list); }
+            if (room != "") { list = Program.Search(room.ToUpper(), list); }//search is case sensetive
+            if (num != "") { list = Program.Search(num, list); }
+
+            //run powershell command for each computer in search
+            foreach (string s in list)
+            {
+                //use to show what computers are being remoted on to
+                holder = " TESTED " + s + holder;
+
+                //Really complicated code found online to connect to powershell remotely
+                string shellUri = "http://schemas.microsoft.com/powershell/Microsoft.PowerShell";
+                PSCredential remoteCredential = new PSCredential(user, pw);
+                WSManConnectionInfo connectionInfo = new WSManConnectionInfo(false, s, 5985, "/wsman", shellUri, remoteCredential);
+
+                using ( Runspace runspace = RunspaceFactory.CreateRunspace(connectionInfo) )
+                {
+                    try
+                    {
+                        runspace.Open();
+
+                        Pipeline pipeline = runspace.CreatePipeline(test);
+
+                        var results = pipeline.Invoke();
+
+                        pipeline.Stop();
+                        runspace.Close();
+                    }
+                    catch
+                    {
+                        holder = " ERROR " + s + " ERROR " + holder;
+                    }
+                }
+                tbTest.Text = holder;
+
+            }
+
+            tbTest.Text = "DONE " + holder;
+        }
+ ////Below - Placed in main program////
+ //convert to secure string
+  public static SecureString ToSecureString(this string Source)
+        {
+            if (string.IsNullOrWhiteSpace(Source))
+                return null;
+            else
+            {
+                SecureString Result = new SecureString();
+                foreach (char c in Source.ToCharArray())
+                    Result.AppendChar(c);
+                return Result;
+            }
+        }
+//search list for keyword
+        public static List<string> Search(string search, List<string> list)
+        {
+            List<string> lines = list.FindAll(item => item.Contains(search));
+ 
+            return lines;
+        }
